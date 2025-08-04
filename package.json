@@ -1,6 +1,7 @@
 {
   "name": "poopy-webrtc-signaling",
   "version": "1.0.0",
+  "type": "module",
   "description": "WebSocket signaling server for WebRTC connections between poopush, poopelle and their controllers",
   "main": "index.js",
   "scripts": {
