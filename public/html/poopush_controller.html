@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Poopush Controller (Initiator)</title>
+</head>
+<body>
+
+  <h1>Poopush Controller (Initiator)</h1>
+
+  <button id="connect-btn">Connect</button>
+  <button id="send-message">Send message</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/simple-peer@9/simplepeer.min.js"></script>
+  <script type="module">
+    import PoopushController from '../js/poopush_controller.js';
+
+    const signalingUrl = 'wss://webrtc-signaling-production-43f3.up.railway.app';
+
+    const poopushController = new PoopushController(signalingUrl);
+
+    document.getElementById('connect-btn').addEventListener('click', () => {
+      poopushController.connect();
+    });
+
+    document.getElementById('send-message').onclick = () => {
+      poopushController.send_command(1, 2, 3, 4);
+      console.log('Command sent');
+    };
+
+    poopushController.addEventListener('socket-connected', () => console.log('Socket connected'));
+    poopushController.addEventListener('offer-sent', () => console.log('Offer sent'));
+    poopushController.addEventListener('answer', e => console.log('Received answer:', e.detail));
+    poopushController.addEventListener('ice-candidate-sent', () => console.log('ICE candidate sent'));
+    poopushController.addEventListener('peer-connected', () => console.log('Peer connected'));
+  </script>
+
+</body>
+</html>
