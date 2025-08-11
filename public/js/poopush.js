@@ -80,7 +80,15 @@ export default class Poopush extends EventTarget {
    */
   #create_peer() {
 
-    this.#peer = new SimplePeer({ initiator: false, trickle: true });
+    this.#peer = new SimplePeer({ 
+      initiator: false, 
+      trickle: true,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' }
+        ]
+      }
+    });
 
     this.#peer.on('signal', (data) => {
       if (data.type === 'answer') {

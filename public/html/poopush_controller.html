@@ -13,11 +13,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/simple-peer@9/simplepeer.min.js"></script>
   <script type="module">
-    import PoopushController from '../js/poopush_controller.js';
+    
+    import poopushController from '../js/poopush_controller.js';
 
-    const signalingUrl = 'wss://webrtc-signaling-production-43f3.up.railway.app';
-
-    const poopushController = new PoopushController(signalingUrl);
 
     document.getElementById('connect-btn').addEventListener('click', () => {
       poopushController.connect();

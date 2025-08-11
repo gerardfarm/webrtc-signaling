@@ -1,25 +1,17 @@
+// import SimplePeer from 'https://cdn.skypack.dev/simple-peer/light';
+
+
 /**
  * PoopushController handles WebRTC signaling as the initiator using a WebSocket server.
  * It uses SimplePeer for peer connection and dispatches lifecycle events.
  */
-export default class PoopushController extends EventTarget {
+class PoopushController extends EventTarget {
 
   static ID = 'poopush_controller';
+  static SIGNALING_SERVER_URL = 'wss://webrtc-signaling-production-43f3.up.railway.app';
 
-  #signaling_server_url;
   #socket = null;
   #peer = null;
-
-  /**
-   * Creates a new PoopushController.
-   * @param {string} signaling_server_url - URL of the WebSocket signaling server.
-   */
-  constructor(signaling_server_url) {
-
-    super();
-    this.#signaling_server_url = signaling_server_url;
-
-  }
 
   /**
    * Initiates the connection: opens WebSocket and sets up the peer.
@@ -27,7 +19,7 @@ export default class PoopushController extends EventTarget {
    */
   connect() {
 
-    this.#socket = new WebSocket(this.#signaling_server_url);
+    this.#socket = new WebSocket(PoopushController.SIGNALING_SERVER_URL);
     this.#socket.addEventListener('open', this.#handle_socket_open.bind(this));
     this.#socket.addEventListener('message', this.#handle_socket_message.bind(this));
 
@@ -47,7 +39,7 @@ export default class PoopushController extends EventTarget {
 
     const buffer = new Uint8Array([id, param0, param1, param2]);
     this.#peer.send(buffer);
-    
+
   }
 
   /**
@@ -92,22 +84,26 @@ export default class PoopushController extends EventTarget {
    */
   #create_peer() {
 
-    this.#peer = new SimplePeer({ initiator: true, trickle: true });
+    this.#peer = new SimplePeer({ 
+      initiator: true, 
+      trickle: true,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' }
+        ]
+      }
+    });
 
     this.#peer.on('signal', (data) => {
-
       if (data.type === 'offer') {
         this.#on_offer_ready(data);
       } else if (data.type === 'candidate') {
         this.#on_ice_candidate_ready(data);
       }
-
     });
 
     this.#peer.on('connect', () => {
-
       this.dispatchEvent(new Event('peer-connected'));
-
     });
 
   }
@@ -163,3 +159,6 @@ export default class PoopushController extends EventTarget {
   }
 
 }
+
+const poopush_controller = new PoopushController();
+export default poopush_controller;
