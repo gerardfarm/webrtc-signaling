@@ -336,6 +336,10 @@ class PoopyController extends EventTarget {
       this.dispatchEvent(new Event('peer-connected'));
     });
 
+    this.#peer.on('error', (err) => {
+      this.dispatchEvent(new CustomEvent('peer-error', { detail: err }));
+    });
+
     this.#peer.on('close', () => {
       if (this.#peer) {
         this.#peer.removeAllListeners();
@@ -376,7 +380,7 @@ class PoopyController extends EventTarget {
     this.#send_socket_message({
       type: 'signal',
       id: this.#id,
-      to: this.#get_controlled_peer_id()
+      to: this.#get_controlled_peer_id(),
       data: candidate
     });
 

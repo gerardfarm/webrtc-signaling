@@ -106,6 +106,19 @@ export default class Poopush extends EventTarget {
       this.#handle_data(data);
     });
 
+    this.#peer.on('error', (err) => {
+      this.dispatchEvent(new CustomEvent('peer-error', { detail: err }));
+    });
+
+    this.#peer.on('close', () => {
+      if (this.#peer) {
+        this.#peer.removeAllListeners();
+        this.#peer.destroy();
+        this.#peer = null;
+      }
+      this.dispatchEvent(new Event('peer-disconnected'));
+    });
+
   }
 
   /**

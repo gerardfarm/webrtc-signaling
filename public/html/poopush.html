@@ -43,10 +43,13 @@
     poopush.addEventListener('ice-candidate', e => console.log('Received ICE candidate:', e.detail));
     poopush.addEventListener('ice-candidate-sent', () => console.log('ICE candidate sent'));
     poopush.addEventListener('peer-connected', () => console.log('Peer connected'));
+    poopush.addEventListener('peer-disconnected', () => console.log('Peer disconnected'));
+
+    let i = 0;
 
     poopush.addEventListener('command', (e) => {
       const arr = new Uint8Array(e.detail);
-      console.log(CommandIds[arr[0]]);
+      console.log(CommandIds[arr[0]], ++i);
     });
 
   </script>
