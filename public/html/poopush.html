@@ -17,6 +17,21 @@
 
     const poopush = new Poopush(signalingUrl);
 
+    const CommandIds = [
+      'DummyId',
+      'MoveForward',
+      'MoveBackward',
+      'TurnLeft',
+      'TurnRight',
+      'LiftShovelArm',
+      'LowerShovelArm',
+      'LiftShovelMouth',
+      'LowerShovelMouth',
+      'StopMotor',
+      'StopShovelArm',
+      'StopShovelMouth'
+    ];
+
     document.getElementById('connect-btn').addEventListener('click', () => {
       poopush.connect();
       console.log('Poopush connect() called');
@@ -31,7 +46,7 @@
 
     poopush.addEventListener('command', (e) => {
       const arr = new Uint8Array(e.detail);
-      console.log([...arr]);
+      console.log(CommandIds[arr[0]]);
     });
 
   </script>

@@ -1,72 +1,416 @@
-// js/poopy.js
-const SIGNALING_SERVER_URL = "wss://webrtc-signaling-production-43f3.up.railway.app";
+/**
+ * Enum-like object representing RemoteCommand CommandId values.
+ */
+const CommandId = Object.freeze({
+  MoveForward: 0x01,
+  MoveBackward: 0x02,
+  TurnLeft: 0x03,
+  TurnRight: 0x04,
+  LiftShovelArm: 0x05,
+  LowerShovelArm: 0x06,
+  LiftShovelMouth: 0x07,
+  LowerShovelMouth: 0x08,
+  StopMotor: 0x09,
+  StopShovelArm: 0x0A,
+  StopShovelMouth: 0x0B,
+});
 
-function create_signaling_socket(peer_id, on_signal, on_offer) {
-  const socket = new WebSocket(SIGNALING_SERVER_URL);
 
-  socket.onopen = () => {
-    console.log(`[${peer_id}] WebSocket connected`);
-    socket.send(JSON.stringify({ 
-      type: "hello", 
-      id: peer_id 
-    }));
-  };
+/**
+ * PoopyController handles WebRTC signaling as the initiator using a WebSocket server.
+ * It uses SimplePeer for peer connection and dispatches lifecycle events.
+ */
+class PoopyController extends EventTarget {
 
-  socket.onmessage = (event) => {
-    const message = JSON.parse(event.data);
-    console.log('received message');
-    console.log(message);
-    if (message.type === "signal" && message.id && message.data) {
-      console.log(`[${peer_id}] Received signal from ${message.id}:`, message.data);
-      if (on_offer) on_offer(message.data, message.from);
-    }
-  };
+  static SIGNALING_SERVER_URL = 'wss://webrtc-signaling-production-43f3.up.railway.app';
+  static COMMAND_SENDING_FREQUENCY = 20; // ms
 
-  function send_signal(target_id, message) {
-    const signal = {
-      type: "signal",
-      to: target_id,
-      id: peer_id,
-      data: message
-    };
+  #id;
+  #socket = null;
+  #peer = null;
+  #intervals = new Map();
 
-    if (socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify(signal));
-    } else {
-      console.warn("WebSocket not ready, waiting...");
+  /**
+   * Creates a new PoopyController.
+   * @param {string} id - Unique ID for this controller instance.
+   */
+  constructor(id) {
 
-      socket.addEventListener("open", () => {
-        console.log('sending offer');
-        console.log(signal);
-        socket.send(JSON.stringify(signal));
-      }, { once: true });
-    }
+    super();
+    this.#id = id;
+    this.#init_socket_connection();
+
   }
 
+  /**
+   * Starts sending MoveForward command periodically.
+   */
+  start_move_forward() {
 
-  return { send_signal };
-}
+    this.#send_command_periodically(CommandId.MoveForward);
 
-function create_peer({ initiator, peer_id, target_peer_id, on_connected }) {
-  const { send_signal } = create_signaling_socket(
-    peer_id,
-    null,
-    (signal, from) => {
-      if (peer) peer.signal(signal);
+  }
+
+  /**
+   * Stops sending MoveForward command and sends StopMotor.
+   */
+  stop_move_forward() {
+
+    this.#clear_command_interval(CommandId.MoveForward);
+    this.#send_command(new Uint8Array([CommandId.StopMotor, 0, 0, 0]));
+
+  }
+
+  /**
+   * Starts sending MoveBackward command periodically.
+   */
+  start_move_backward() {
+
+    this.#send_command_periodically(CommandId.MoveBackward);
+
+  }
+
+  /**
+   * Stops sending MoveBackward command and sends StopMotor.
+   */
+  stop_move_backward() {
+
+    this.#clear_command_interval(CommandId.MoveBackward);
+    this.#send_command(new Uint8Array([CommandId.StopMotor, 0, 0, 0]));
+
+  }
+
+  /**
+   * Starts sending TurnLeft command periodically.
+   */
+  start_turn_left() {
+
+    this.#send_command_periodically(CommandId.TurnLeft);
+
+  }
+
+  /**
+   * Stops sending TurnLeft command and sends StopMotor.
+   */
+  stop_turn_left() {
+
+    this.#clear_command_interval(CommandId.TurnLeft);
+    this.#send_command(new Uint8Array([CommandId.StopMotor, 0, 0, 0]));
+
+  }
+
+  /**
+   * Starts sending TurnRight command periodically.
+   */
+  start_turn_right() {
+
+    this.#send_command_periodically(CommandId.TurnRight);
+
+  }
+
+  /**
+   * Stops sending TurnRight command and sends StopMotor.
+   */
+  stop_turn_right() {
+
+    this.#clear_command_interval(CommandId.TurnRight);
+    this.#send_command(new Uint8Array([CommandId.StopMotor, 0, 0, 0]));
+
+  }
+
+  /**
+   * Starts sending LiftShovelArm command periodically.
+   */
+  start_lift_shovel_arm() {
+
+    this.#send_command_periodically(CommandId.LiftShovelArm);
+
+  }
+
+  /**
+   * Stops sending LiftShovelArm command and sends StopShovelArm.
+   */
+  stop_lift_shovel_arm() {
+
+    this.#clear_command_interval(CommandId.LiftShovelArm);
+    this.#send_command(new Uint8Array([CommandId.StopShovelArm, 0, 0, 0]));
+
+  }
+
+  /**
+   * Starts sending LowerShovelArm command periodically.
+   */
+  start_lower_shovel_arm() {
+
+    this.#send_command_periodically(CommandId.LowerShovelArm);
+
+  }
+
+  /**
+   * Stops sending LowerShovelArm command and sends StopShovelArm.
+   */
+  stop_lower_shovel_arm() {
+
+    this.#clear_command_interval(CommandId.LowerShovelArm);
+    this.#send_command(new Uint8Array([CommandId.StopShovelArm, 0, 0, 0]));
+
+  }
+
+  /**
+   * Starts sending LiftShovelMouth command periodically.
+   */
+  start_lift_shovel_mouth() {
+
+    this.#send_command_periodically(CommandId.LiftShovelMouth);
+
+  }
+
+  /**
+   * Stops sending LiftShovelMouth command and sends StopShovelMouth.
+   */
+  stop_lift_shovel_mouth() {
+
+    this.#clear_command_interval(CommandId.LiftShovelMouth);
+    this.#send_command(new Uint8Array([CommandId.StopShovelMouth, 0, 0, 0]));
+
+  }
+
+  /**
+   * Starts sending LowerShovelMouth command periodically.
+   */
+  start_lower_shovel_mouth() {
+
+    this.#send_command_periodically(CommandId.LowerShovelMouth);
+
+  }
+
+  /**
+   * Stops sending LowerShovelMouth command and sends StopShovelMouth.
+   */
+  stop_lower_shovel_mouth() {
+
+    this.#clear_command_interval(CommandId.LowerShovelMouth);
+    this.#send_command(new Uint8Array([CommandId.StopShovelMouth, 0, 0, 0]));
+
+  }
+
+  /**
+   * Initiates the connection: opens WebSocket.
+   * Dispatches `socket-connected` when the WebSocket is open.
+   */
+  #init_socket_connection() {
+
+    this.#socket = new WebSocket(PoopyController.SIGNALING_SERVER_URL);
+    this.#socket.addEventListener('open', this.#handle_socket_open.bind(this));
+    this.#socket.addEventListener('message', this.#handle_socket_message.bind(this));
+
+  }
+
+  /**
+   * Sends a Uint8Array command periodically based on COMMAND_SENDING_FREQUENCY.
+   * @param {number} command_id
+   */
+  #send_command_periodically(command_id) {
+
+    if (this.#intervals.has(command_id)) return;
+
+    const send_fn = () => {
+      this.#send_command(new Uint8Array([command_id, 0, 0, 0]));
+    };
+
+    send_fn();
+
+    const interval_id = setInterval(send_fn, PoopyController.COMMAND_SENDING_FREQUENCY);
+
+    this.#intervals.set(command_id, interval_id);
+
+  }
+
+  /**
+   * Clears periodic command sending interval for given command_id.
+   * @param {number} command_id
+   */
+  #clear_command_interval(command_id) {
+
+    if (!this.#intervals.has(command_id)) return;
+
+    clearInterval(this.#intervals.get(command_id));
+    this.#intervals.delete(command_id);
+
+  }
+
+  /**
+   * Clears all command sending intervals.
+   */
+  #clear_all_intervals() {
+
+    for (const interval_id of Object.values(this.#intervals)) {
+      clearInterval(interval_id);
     }
-  );
 
-  const peer = new SimplePeer({ initiator });
+    this.#intervals = {};
 
-  peer.on("signal", (data) => {
-    console.log(`[${peer_id}] Signal generated:`, data);
-    send_signal(target_peer_id, data);
-  });
+  }
 
-  peer.on("connect", () => {
-    console.log(`[${peer_id}] Peer connection established`);
-    if (on_connected) on_connected(peer);
-  });
+  /**
+   * Sends a Uint8Array command via peer data channel.
+   * @param {Uint8Array} buffer - Must be length 4.
+   */
+  #send_command(buffer) {
 
-  return peer;
+    if (!this.#peer || !this.#peer.connected) return;
+
+    this.#peer.send(buffer);
+
+  }
+
+  /**
+   * Handles the WebSocket open event, sets up peer and sends hello message.
+   */
+  #handle_socket_open() {
+
+    this.dispatchEvent(new Event('socket-connected'));
+
+    this.#send_socket_message({
+      type: 'hello',
+      id: this.#id
+    });
+
+  }
+
+  /**
+   * Handles incoming WebSocket messages.
+   * @param {MessageEvent} event
+   */
+  #handle_socket_message(event) {
+
+    const msg = JSON.parse(event.data);
+
+    if (msg.type === 'signal' && msg.data) {
+      if (msg.data.type === 'answer') {
+        this.#peer.signal(msg.data);
+        this.dispatchEvent(new CustomEvent('answer', { detail: msg.data }));
+      } else if (msg.data.type === 'candidate') {
+        this.#peer.signal(msg.data);
+        this.dispatchEvent(new CustomEvent('ice-candidate', { detail: msg.data }));
+      }
+    }
+
+    if (msg.type === 'remote-peer-online') {
+      this.#create_peer();
+      this.dispatchEvent(new Event('remote-peer-online'));
+      return;
+    }
+
+    if (msg.type === 'remote-peer-offline') {
+      this.dispatchEvent(new Event('remote-peer-offline'));
+    }
+
+  }
+
+  /**
+   * Creates the SimplePeer instance and attaches handlers for signaling and connection.
+   * Dispatches `peer-connected` when the peer connection is established.
+   */
+  #create_peer() {
+
+    this.#peer = new SimplePeer({ 
+      initiator: true, 
+      trickle: true,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' }
+        ]
+      }
+    });
+
+    this.#peer.on('signal', (data) => {
+      if (data.type === 'offer') {
+        this.#on_offer_ready(data);
+      } else if (data.type === 'candidate') {
+        this.#on_ice_candidate_ready(data);
+      }
+    });
+
+    this.#peer.on('connect', () => {
+      this.dispatchEvent(new Event('peer-connected'));
+    });
+
+    this.#peer.on('close', () => {
+      if (this.#peer) {
+        this.#peer.removeAllListeners();
+        this.#peer.destroy();
+        this.#peer = null;
+      }
+      this.#clear_all_intervals();
+      this.dispatchEvent(new Event('peer-disconnected'));
+    });
+
+  }
+
+  /**
+   * Handles the local offer creation by sending it over the WebSocket.
+   * Dispatches `offer-sent`.
+   * @param {object} offer
+   */
+  #on_offer_ready(offer) {
+
+    this.#send_socket_message({
+      type: 'signal',
+      id: this.#id,
+      to: this.#get_controlled_peer_id(),
+      data: offer
+    });
+
+    this.dispatchEvent(new Event('offer-sent'));
+
+  }
+
+  /**
+   * Handles new ICE candidates and sends them via WebSocket.
+   * Dispatches `ice-candidate-sent`.
+   * @param {object} candidate
+   */
+  #on_ice_candidate_ready(candidate) {
+
+    this.#send_socket_message({
+      type: 'signal',
+      id: this.#id,
+      to: this.#get_controlled_peer_id()
+      data: candidate
+    });
+
+    this.dispatchEvent(new Event('ice-candidate-sent'));
+
+  }
+
+  /**
+   * Sends a JSON message through the WebSocket.
+   * @param {object} msg
+   */
+  #send_socket_message(msg) {
+
+    if (this.#socket.readyState === WebSocket.OPEN) {
+      this.#socket.send(JSON.stringify(msg));
+    } else {
+      console.error('WebSocket not open. Cannot send:', msg);
+    }
+
+  }
+
+  /**
+   * Returns the peer ID controlled by this controller.
+   * @returns {string} The ID of the controlled peer.
+   */
+  #get_controlled_peer_id() {
+
+    return this.#id === 'poopush_controller' ? 'poopush' : 'poopush_controller';
+
+  }
+
 }
+
+const poopush = new PoopyController('poopush_controller');
+const poopelle = new PoopyController('poopelle_controller');
+
+export { poopush, poopelle };

@@ -8,29 +8,44 @@
 
   <h1>Poopush Controller (Initiator)</h1>
 
-  <button id="connect-btn">Connect</button>
-  <button id="send-message">Send message</button>
+  <button id="start-lift-shovel-arm-btn">Start lift shovel arm</button>
+  <button id="stop-lift-shovel-arm-btn">Stop lift shovel arm</button>
 
   <script src="https://cdn.jsdelivr.net/npm/simple-peer@9/simplepeer.min.js"></script>
   <script type="module">
     
-    import poopushController from '../js/poopush_controller.js';
+    import { poopush, poopelle } from '../js/poopy.js';
 
-
-    document.getElementById('connect-btn').addEventListener('click', () => {
-      poopushController.connect();
-    });
-
-    document.getElementById('send-message').onclick = () => {
-      poopushController.send_command(1, 2, 3, 4);
-      console.log('Command sent');
+    document.getElementById('start-lift-shovel-arm-btn').onclick = () => {
+      poopush.start_lift_shovel_arm();
+      console.log('Poopush start lift shovel arm');
     };
 
-    poopushController.addEventListener('socket-connected', () => console.log('Socket connected'));
-    poopushController.addEventListener('offer-sent', () => console.log('Offer sent'));
-    poopushController.addEventListener('answer', e => console.log('Received answer:', e.detail));
-    poopushController.addEventListener('ice-candidate-sent', () => console.log('ICE candidate sent'));
-    poopushController.addEventListener('peer-connected', () => console.log('Peer connected'));
+    document.getElementById('stop-lift-shovel-arm-btn').onclick = () => {
+      poopush.stop_lift_shovel_arm();
+      console.log('Poopush stop lift shovel arm');
+    };
+
+    poopush.addEventListener('socket-connected', () => console.log('Poopush socket connected'));
+    poopush.addEventListener('remote-peer-online', () => console.log('Poopush remote peer online'));
+    poopush.addEventListener('remote-peer-offline', () => console.log('Poopush remote peer offline'));
+    poopush.addEventListener('offer-sent', () => console.log('Poopush offer sent'));
+    poopush.addEventListener('answer', e => console.log('Poopush received answer:', e.detail));
+    poopush.addEventListener('ice-candidate', e => console.log('Poopush ICE candidate', e.detail));
+    poopush.addEventListener('ice-candidate-sent', () => console.log('Poopush ICE candidate sent'));
+    poopush.addEventListener('peer-connected', () => console.log('Poopush peer connected'));
+    poopush.addEventListener('peer-disconnected', () => console.log('Poopush peer disconnected'));
+
+    poopelle.addEventListener('socket-connected', () => console.log('Poopelle socket connected'));
+    poopelle.addEventListener('remote-peer-online', () => console.log('Poopelle remote peer online'));
+    poopelle.addEventListener('remote-peer-offline', () => console.log('Poopelle remote peer offline'));
+    poopelle.addEventListener('offer-sent', () => console.log('Poopelle offer sent'));
+    poopelle.addEventListener('answer', e => console.log('Poopelle received answer:', e.detail));
+    poopelle.addEventListener('ice-candidate', e => console.log('Poopelle ICE candidate', e.detail));
+    poopelle.addEventListener('ice-candidate-sent', () => console.log('Poopelle ICE candidate sent'));
+    poopelle.addEventListener('peer-connected', () => console.log('Poopelle peer connected'));
+    poopelle.addEventListener('peer-disconnected', () => console.log('Poopelle peer disconnected'));
+
   </script>
 
 </body>
