@@ -13,6 +13,8 @@ const CommandId = Object.freeze({
   StopMotor: 0x09,
   StopShovelArm: 0x0A,
   StopShovelMouth: 0x0B,
+  StartVideo: 0x0C,
+  StopVideo: 0x0D,
 });
 
 
@@ -38,7 +40,18 @@ class PoopyController extends EventTarget {
 
     super();
     this.#id = id;
-    this.#init_socket_connection();
+
+  }
+
+  /**
+   * Initiates the connection: opens WebSocket.
+   * Dispatches `socket-connected` when the WebSocket is open.
+   */
+  connect() {
+
+    this.#socket = new WebSocket(PoopyController.SIGNALING_SERVER_URL);
+    this.#socket.addEventListener('open', this.#handle_socket_open.bind(this));
+    this.#socket.addEventListener('message', this.#handle_socket_message.bind(this));
 
   }
 
@@ -195,14 +208,47 @@ class PoopyController extends EventTarget {
   }
 
   /**
-   * Initiates the connection: opens WebSocket.
-   * Dispatches `socket-connected` when the WebSocket is open.
+   * Sends StartVideo command.
    */
-  #init_socket_connection() {
+  start_video() {
 
-    this.#socket = new WebSocket(PoopyController.SIGNALING_SERVER_URL);
-    this.#socket.addEventListener('open', this.#handle_socket_open.bind(this));
-    this.#socket.addEventListener('message', this.#handle_socket_message.bind(this));
+    this.#send_command(new Uint8Array([CommandId.StartVideo, 0, 0, 0]));
+
+  }
+
+  /**
+   * Sends StopVideo command.
+   */
+  stop_video() {
+
+    this.#send_command(new Uint8Array([CommandId.StopVideo, 0, 0, 0]));
+
+  }
+
+  /**
+   * Logs all dispatched events from this controller.
+   */
+  log_events() {
+
+    const events = [
+      'web-socket-connected',
+      'remote-peer-online',
+      'remote-peer-offline',
+      'webrtc-offer-sent',
+      'webrtc-answer',
+      'webrtc-ice-candidate',
+      'webrtc-ice-candidate-sent',
+      'peer-connected',
+      'peer-disconnected',
+      'peer-stream',
+      'peer-error'
+    ];
+
+    events.forEach((event_name) => {
+      this.addEventListener(event_name, (event) => {
+        console.log(`${this.#id} event: ${event.type}`);
+      });
+    });
 
   }
 
@@ -269,7 +315,7 @@ class PoopyController extends EventTarget {
    */
   #handle_socket_open() {
 
-    this.dispatchEvent(new Event('socket-connected'));
+    this.dispatchEvent(new Event('web-socket-connected'));
 
     this.#send_socket_message({
       type: 'hello',
@@ -289,10 +335,10 @@ class PoopyController extends EventTarget {
     if (msg.type === 'signal' && msg.data) {
       if (msg.data.type === 'answer') {
         this.#peer.signal(msg.data);
-        this.dispatchEvent(new CustomEvent('answer', { detail: msg.data }));
+        this.dispatchEvent(new CustomEvent('webrtc-answer', { detail: msg.data }));
       } else if (msg.data.type === 'candidate') {
         this.#peer.signal(msg.data);
-        this.dispatchEvent(new CustomEvent('ice-candidate', { detail: msg.data }));
+        this.dispatchEvent(new CustomEvent('webrtc-ice-candidate', { detail: msg.data }));
       }
     }
 
@@ -332,6 +378,10 @@ class PoopyController extends EventTarget {
       }
     });
 
+    this.#peer.on('stream', (stream) => {
+      this.dispatchEvent(new CustomEvent('peer-stream', { detail: stream }));
+    });
+
     this.#peer.on('connect', () => {
       this.dispatchEvent(new Event('peer-connected'));
     });
@@ -366,7 +416,7 @@ class PoopyController extends EventTarget {
       data: offer
     });
 
-    this.dispatchEvent(new Event('offer-sent'));
+    this.dispatchEvent(new Event('webrtc-offer-sent'));
 
   }
 
@@ -384,7 +434,7 @@ class PoopyController extends EventTarget {
       data: candidate
     });
 
-    this.dispatchEvent(new Event('ice-candidate-sent'));
+    this.dispatchEvent(new Event('webrtc-ice-candidate-sent'));
 
   }
 
@@ -414,7 +464,42 @@ class PoopyController extends EventTarget {
 
 }
 
-const poopush = new PoopyController('poopush_controller');
-const poopelle = new PoopyController('poopelle_controller');
+/**
+ * Poopy class encapsulates two PoopyController instances (poopush and poopelle)
+ * and exposes a method to switch the current controller.
+ */
+class Poopy {
 
-export { poopush, poopelle };
+  poopush;
+  poopelle;
+  controller;
+  
+  /**
+   * Creates the Poopy instance and initializes both controllers.
+   */
+  constructor() {
+
+    this.poopush = new PoopyController('poopush_controller');
+    this.poopelle = new PoopyController('poopelle_controller');
+    this.controller = this.poopush;
+
+  }
+
+  /**
+   * Switches the current controller to the other one.
+   */
+  switch_controller() {
+
+    if (this.controller === this.poopelle) {
+      this.controller = this.poopush;
+    } else {
+      this.controller = this.poopelle;
+    }
+
+  }
+
+}
+
+// Create a single Poopy instance and export it
+const poopy = new Poopy();
+export default poopy;

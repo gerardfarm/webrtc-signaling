@@ -8,43 +8,65 @@
 
   <h1>Poopush Controller (Initiator)</h1>
 
+  <video id="remote-video" playsinline></video>
+  <button id="connect-btn">Connect</button>
   <button id="start-lift-shovel-arm-btn">Start lift shovel arm</button>
   <button id="stop-lift-shovel-arm-btn">Stop lift shovel arm</button>
+  <button id="start-video-btn">Start Video</button>
+  <button id="stop-video-btn">Stop Video</button>
 
   <script src="https://cdn.jsdelivr.net/npm/simple-peer@9/simplepeer.min.js"></script>
   <script type="module">
     
-    import { poopush, poopelle } from '../js/poopy.js';
+    import poopy from '../js/poopy.js';
+
+    poopy.controller.log_events();
+
+    poopy.controller.addEventListener('peer-stream', (e) => {
+      let video = document.getElementById('remote-video');
+      video.srcObject = e.detail;
+      video.play();
+    });
+
+    document.getElementById('start-video-btn').onclick = () => {
+      poopy.controller.start_video();
+      console.log('Poopush controller start video');
+    };
+
+    document.getElementById('stop-video-btn').onclick = () => {
+      let video = document.getElementById('remote-video');
+      let stream = video.srcObject;
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+      videoEl.srcObject = null;
+      poopy.controller.stop_video();
+    };
+
+    document.getElementById('connect-btn').onclick = () => {
+      poopy.controller.connect();
+      console.log('Poopush controller connect');
+    };
 
     document.getElementById('start-lift-shovel-arm-btn').onclick = () => {
-      poopush.start_lift_shovel_arm();
-      console.log('Poopush start lift shovel arm');
+      poopy.controller.start_lift_shovel_arm();
+      console.log('Poopush controller start lift shovel arm');
     };
 
     document.getElementById('stop-lift-shovel-arm-btn').onclick = () => {
-      poopush.stop_lift_shovel_arm();
-      console.log('Poopush stop lift shovel arm');
+      poopy.controller.stop_lift_shovel_arm();
+      console.log('Poopush controller stop lift shovel arm');
     };
 
-    poopush.addEventListener('socket-connected', () => console.log('Poopush socket connected'));
-    poopush.addEventListener('remote-peer-online', () => console.log('Poopush remote peer online'));
-    poopush.addEventListener('remote-peer-offline', () => console.log('Poopush remote peer offline'));
-    poopush.addEventListener('offer-sent', () => console.log('Poopush offer sent'));
-    poopush.addEventListener('answer', e => console.log('Poopush received answer:', e.detail));
-    poopush.addEventListener('ice-candidate', e => console.log('Poopush ICE candidate', e.detail));
-    poopush.addEventListener('ice-candidate-sent', () => console.log('Poopush ICE candidate sent'));
-    poopush.addEventListener('peer-connected', () => console.log('Poopush peer connected'));
-    poopush.addEventListener('peer-disconnected', () => console.log('Poopush peer disconnected'));
+    document.getElementById('start-video-btn').onclick = () => {
+      poopy.controller.start_video();
+      console.log('Poopush controller start video');
+    };
 
-    poopelle.addEventListener('socket-connected', () => console.log('Poopelle socket connected'));
-    poopelle.addEventListener('remote-peer-online', () => console.log('Poopelle remote peer online'));
-    poopelle.addEventListener('remote-peer-offline', () => console.log('Poopelle remote peer offline'));
-    poopelle.addEventListener('offer-sent', () => console.log('Poopelle offer sent'));
-    poopelle.addEventListener('answer', e => console.log('Poopelle received answer:', e.detail));
-    poopelle.addEventListener('ice-candidate', e => console.log('Poopelle ICE candidate', e.detail));
-    poopelle.addEventListener('ice-candidate-sent', () => console.log('Poopelle ICE candidate sent'));
-    poopelle.addEventListener('peer-connected', () => console.log('Poopelle peer connected'));
-    poopelle.addEventListener('peer-disconnected', () => console.log('Poopelle peer disconnected'));
+    document.getElementById('stop-video-btn').onclick = () => {
+      poopush.stop_video();
+      console.log('Poopush controller stop video');
+    };
 
   </script>
 

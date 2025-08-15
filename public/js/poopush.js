@@ -176,7 +176,7 @@ export default class Poopush extends EventTarget {
    * @param {Uint8Array} data
    */
   #handle_data(data) {
-
+    
     if (data instanceof Uint8Array && data.length === 4) {
       const event = new CustomEvent('command', { detail: data });
       this.dispatchEvent(event);
