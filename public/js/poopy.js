@@ -236,6 +236,7 @@ class PoopyController extends EventTarget {
       'remote-peer-offline',
       'webrtc-offer-sent',
       'webrtc-answer',
+      'webrtc-offer',
       'webrtc-ice-candidate',
       'webrtc-ice-candidate-sent',
       'peer-connected',
@@ -339,6 +340,9 @@ class PoopyController extends EventTarget {
       } else if (msg.data.type === 'candidate') {
         this.#peer.signal(msg.data);
         this.dispatchEvent(new CustomEvent('webrtc-ice-candidate', { detail: msg.data }));
+      } else if (msg.data.type === 'offer') {
+        this.#peer.signal(msg.data);
+        this.dispatchEvent(new CustomEvent('webrtc-offer', { detail: msg.data }));
       }
     }
 
