@@ -253,7 +253,6 @@ class PoopyController extends EventTarget {
         } else {
           console.log(`${this.#id} event: ${event.type}`);
         }
-        
       });
     });
 
