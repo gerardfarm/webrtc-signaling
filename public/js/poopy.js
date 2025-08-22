@@ -258,10 +258,6 @@ class PoopyController extends EventTarget {
    * @param {number} command_id
    */
   #send_command_periodically(command_id) {
-    console.log("[Debug] #send_command_periodically called. command_id:", command_id);
-    console.log("[Debug] this.#intervals type:", typeof this.#intervals);
-    console.log("[Debug] this.#intervals value:", this.#intervals);
-    console.log("[Debug] this.#intervals.has:", typeof this.#intervals?.has); // Safe navigation
 
     if (this.#intervals.has && this.#intervals.has(command_id)) { // Add safety check
      console.warn("[Debug] Interval already exists for command_id:", command_id);
