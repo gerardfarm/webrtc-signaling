@@ -376,6 +376,10 @@ class PoopyController extends EventTarget {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' }
         ]
+      },
+      offerOptions: {
+        offerToReceiveVideo: true,
+        offerToReceiveAudio: false
       }
     });
 
