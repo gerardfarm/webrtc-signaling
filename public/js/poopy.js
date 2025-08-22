@@ -40,7 +40,7 @@ class PoopyController extends EventTarget {
 
     super();
     this.#id = id;
-    this.#intervals = new Map(); // Ensure this is present and correct
+    // this.#intervals = new Map(); // Ensure this is present and correct
 
   }
 
@@ -293,14 +293,14 @@ class PoopyController extends EventTarget {
    * Clears all command sending intervals.
    */
   #clear_all_intervals() {
-    console.log("[Debug] #clear_all_intervals called");
+    // console.log("[Debug] #clear_all_intervals called");
     for (const interval_id of Object.values(this.#intervals)) {
       clearInterval(interval_id);
     }
 
-    // this.#intervals = {};
-    this.#intervals = new Map();
-    console.log("[PoopyController] Command intervals cleared and Map reset."); // Optional debug log
+    this.#intervals = {};
+    // this.#intervals = new Map();
+    // console.log("[PoopyController] Command intervals cleared and Map reset."); // Optional debug log
   }
 
   /**
