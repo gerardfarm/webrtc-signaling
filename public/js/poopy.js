@@ -404,6 +404,7 @@ class PoopyController extends EventTarget {
     });
 
     this.#peer.on('error', (err) => {
+      console.log('error', err);
       this.dispatchEvent(new CustomEvent('peer-error', { detail: err }));
     });
 
