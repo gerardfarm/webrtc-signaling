@@ -40,6 +40,7 @@ class PoopyController extends EventTarget {
 
     super();
     this.#id = id;
+    // this.#intervals = new Map(); // Ensure this is present and correct
 
   }
 
@@ -259,7 +260,10 @@ class PoopyController extends EventTarget {
    */
   #send_command_periodically(command_id) {
 
-    if (this.#intervals.has(command_id)) return;
+    if (this.#intervals.has && this.#intervals.has(command_id)) { // Add safety check
+     console.warn("[Debug] Interval already exists for command_id:", command_id);
+     return;
+  }
 
     const send_fn = () => {
       this.#send_command(new Uint8Array([command_id, 0, 0, 0]));
@@ -290,13 +294,14 @@ class PoopyController extends EventTarget {
    * Clears all command sending intervals.
    */
   #clear_all_intervals() {
-
+    // console.log("[Debug] #clear_all_intervals called");
     for (const interval_id of Object.values(this.#intervals)) {
       clearInterval(interval_id);
     }
 
     this.#intervals = {};
-
+    // this.#intervals = new Map();
+    // console.log("[PoopyController] Command intervals cleared and Map reset."); // Optional debug log
   }
 
   /**
@@ -395,6 +400,7 @@ class PoopyController extends EventTarget {
     });
 
     this.#peer.on('close', () => {
+      console.log("[Debug] SimplePeer 'close' event fired");
       if (this.#peer) {
         this.#peer.removeAllListeners();
         this.#peer.destroy();
