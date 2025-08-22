@@ -248,7 +248,12 @@ class PoopyController extends EventTarget {
 
     events.forEach((event_name) => {
       this.addEventListener(event_name, (event) => {
-        console.log(`${this.#id} event: ${event.type}`);
+        if (event.detail) {
+          console.log(`${this.#id} event: ${event.type}, event_obj: `, event.detail);  
+        } else {
+          console.log(`${this.#id} event: ${event.type}`);
+        }
+        
       });
     });
 
