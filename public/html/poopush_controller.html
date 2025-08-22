@@ -24,6 +24,7 @@
 
     poopy.controller.addEventListener('peer-stream', (e) => {
       let video = document.getElementById('remote-video');
+      console.log('video obj', e.detail);
       video.srcObject = e.detail;
       video.play();
     });
@@ -56,16 +57,6 @@
     document.getElementById('stop-lift-shovel-arm-btn').onclick = () => {
       poopy.controller.stop_lift_shovel_arm();
       console.log('Poopush controller stop lift shovel arm');
-    };
-
-    document.getElementById('start-video-btn').onclick = () => {
-      poopy.controller.start_video();
-      console.log('Poopush controller start video');
-    };
-
-    document.getElementById('stop-video-btn').onclick = () => {
-      poopush.stop_video();
-      console.log('Poopush controller stop video');
     };
 
   </script>
