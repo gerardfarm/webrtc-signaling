@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Poopelle (Receiver)</title>
+</head>
+<body>
+
+  <h1>Poopelle (Receiver)</h1>
+
+  <button id="connect-btn">Connect</button>
+  <script src="https://cdn.jsdelivr.net/npm/simple-peer@9/simplepeer.min.js"></script>
+  <script type="module">
+    import Poopelle from '../js/poopelle.js';
+
+    const signalingUrl = 'wss://webrtc-signaling-production-43f3.up.railway.app';
+
+    const poopush = new Poopelle(signalingUrl);
+
+    const CommandIds = [
+      'DummyId',
+      'MoveForward',
+      'MoveBackward',
+      'TurnLeft',
+      'TurnRight',
+      'LiftShovelArm',
+      'LowerShovelArm',
+      'LiftShovelMouth',
+      'LowerShovelMouth',
+      'StopMotor',
+      'StopShovelArm',
+      'StopShovelMouth'
+    ];
+
+    document.getElementById('connect-btn').addEventListener('click', () => {
+      poopush.connect();
+      console.log('Poopelle connect() called');
+    });
+
+    poopush.addEventListener('socket-connected', () => console.log('Socket connected'));
+    poopush.addEventListener('offer', e => console.log('Received offer:', e.detail));
+    poopush.addEventListener('answer-sent', () => console.log('Answer sent'));
+    poopush.addEventListener('ice-candidate', e => console.log('Received ICE candidate:', e.detail));
+    poopush.addEventListener('ice-candidate-sent', () => console.log('ICE candidate sent'));
+    poopush.addEventListener('peer-connected', () => console.log('Peer connected'));
+    poopush.addEventListener('peer-disconnected', () => console.log('Peer disconnected'));
+
+    let i = 0;
+
+    poopush.addEventListener('command', (e) => {
+      const arr = new Uint8Array(e.detail);
+      console.log(CommandIds[arr[0]], ++i);
+    });
+
+  </script>
+
+</body>
+</html>
