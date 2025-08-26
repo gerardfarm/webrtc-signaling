@@ -70,6 +70,8 @@ class PoopySignalingServer {
 
     } else if (type === 'signal' && id && to && data) {
 
+      console.log(`signal, id:${id}, to: ${to}`, data);
+
       this.#forward_signal(to, id, data);
 
     }
