@@ -477,7 +477,7 @@ class PoopyController extends EventTarget {
    */
   #get_controlled_peer_id() {
 
-    return this.#id === 'poopush_controller' ? 'poopush' : 'poopush_controller';
+    return this.#id === 'poopush_controller' ? 'poopush' : 'poopelle';
 
   }
 
