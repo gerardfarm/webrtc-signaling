@@ -6,7 +6,7 @@ const OPPOSITE_PEER_MAP = {
   'poopush': 'poopush_controller',
   'poopelle': 'poopelle_controller',
   'poopush_controller': 'poopush',
-  'poopell_controller': 'poopelle',
+  'poopelle_controller': 'poopelle',
 };
 
 class PoopySignalingServer {
