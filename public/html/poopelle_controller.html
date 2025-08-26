@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Poopelle Controller (Initiator)</title>
+</head>
+<body>
+
+  <h1>Poopelle Controller (Initiator)</h1>
+
+  <video id="remote-video" playsinline></video>
+  <button id="connect-btn">Connect</button>
+  <button id="start-lift-shovel-arm-btn">Start lift shovel arm</button>
+  <button id="stop-lift-shovel-arm-btn">Stop lift shovel arm</button>
+  <button id="start-video-btn">Start Video</button>
+  <button id="stop-video-btn">Stop Video</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/simple-peer@9/simplepeer.min.js"></script>
+  <script type="module">
+    
+    import poopy from '../js/poopy.js';
+
+    poopy.switch_controller();
+    poopy.controller.log_events();
+
+    poopy.controller.addEventListener('peer-stream', (e) => {
+      let video = document.getElementById('remote-video');
+      console.log('video obj', e.detail);
+      video.srcObject = e.detail;
+      video.play();
+    });
+
+    document.getElementById('start-video-btn').onclick = () => {
+      poopy.controller.start_video();
+      console.log('Poopelle controller start video');
+    };
+
+    document.getElementById('stop-video-btn').onclick = () => {
+      let video = document.getElementById('remote-video');
+      let stream = video.srcObject;
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+      videoEl.srcObject = null;
+      poopy.controller.stop_video();
+    };
+
+    document.getElementById('connect-btn').onclick = () => {
+      poopy.controller.connect();
+      console.log('Poopelle controller connect');
+    };
+
+    document.getElementById('start-lift-shovel-arm-btn').onclick = () => {
+      poopy.controller.start_lift_shovel_arm();
+      console.log('Poopelle controller start lift shovel arm');
+    };
+
+    document.getElementById('stop-lift-shovel-arm-btn').onclick = () => {
+      poopy.controller.stop_lift_shovel_arm();
+      console.log('Poopelle controller stop lift shovel arm');
+    };
+
+  </script>
+
+</body>
+</html>
