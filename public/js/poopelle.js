@@ -1,5 +1,5 @@
 /**
- * Poopush handles WebRTC signaling as the receiving peer using a WebSocket server.
+ * Poopelle handles WebRTC signaling as the receiving peer using a WebSocket server.
  * It uses SimplePeer for peer connection and dispatches lifecycle events.
  */
 export default class Poopelle extends EventTarget {
@@ -11,7 +11,7 @@ export default class Poopelle extends EventTarget {
   #peer = null;
 
   /**
-   * Creates a new Poopush instance.
+   * Creates a new Poopelle instance.
    * @param {string} signaling_server_url - URL of the WebSocket signaling server.
    */
   constructor(signaling_server_url) {
@@ -42,7 +42,7 @@ export default class Poopelle extends EventTarget {
 
     this.#send_socket_message({
       type: 'hello',
-      id: Poopush.ID
+      id: Poopelle.ID
     });
 
   }
@@ -130,7 +130,7 @@ export default class Poopelle extends EventTarget {
 
     this.#send_socket_message({
       type: 'signal',
-      id: Poopush.ID,
+      id: Poopelle.ID,
       to: 'poopelle_controller',
       data: answer
     });
@@ -148,7 +148,7 @@ export default class Poopelle extends EventTarget {
 
     this.#send_socket_message({
       type: 'signal',
-      id: Poopush.ID,
+      id: Poopelle.ID,
       to: 'poopelle_controller',
       data: candidate
     });
