@@ -1,4 +1,4 @@
-import PoopySignalingServer from './poopy_signaling_server.js';
+import PoopyServer from './poopy_server.js';
 
-const server = new PoopySignalingServer();
+const server = new PoopyServer();
 server.start();

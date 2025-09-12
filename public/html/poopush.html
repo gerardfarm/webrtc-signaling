@@ -11,11 +11,10 @@
   <button id="connect-btn">Connect</button>
   <script src="https://cdn.jsdelivr.net/npm/simple-peer@9/simplepeer.min.js"></script>
   <script type="module">
-    import Poopush from '../js/poopush.js';
+    
+    import Poopy from '../js/poopy.js';
 
-    const signalingUrl = 'wss://webrtc-signaling-production-43f3.up.railway.app';
-
-    const poopush = new Poopush(signalingUrl);
+    const poopush = new Poopy('poopush', 'ws://localhost:3000');
 
     const CommandIds = [
       'DummyId',
@@ -32,18 +31,7 @@
       'StopShovelMouth'
     ];
 
-    document.getElementById('connect-btn').addEventListener('click', () => {
-      poopush.connect();
-      console.log('Poopush connect() called');
-    });
-
-    poopush.addEventListener('socket-connected', () => console.log('Socket connected'));
-    poopush.addEventListener('offer', e => console.log('Received offer:', e.detail));
-    poopush.addEventListener('answer-sent', () => console.log('Answer sent'));
-    poopush.addEventListener('ice-candidate', e => console.log('Received ICE candidate:', e.detail));
-    poopush.addEventListener('ice-candidate-sent', () => console.log('ICE candidate sent'));
-    poopush.addEventListener('peer-connected', () => console.log('Peer connected'));
-    poopush.addEventListener('peer-disconnected', () => console.log('Peer disconnected'));
+    poopush.log_events();
 
     let i = 0;
 

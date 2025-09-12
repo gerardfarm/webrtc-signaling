@@ -8,54 +8,100 @@
 
   <h1>Poopush Controller (Initiator)</h1>
 
-  <video id="remote-video" playsinline></video>
+  <div id="media">
+    <video id="remote-video"  width="640" height="360" autoplay playsinline></video>
+  </div>
   <button id="connect-btn">Connect</button>
   <button id="start-lift-shovel-arm-btn">Start lift shovel arm</button>
   <button id="stop-lift-shovel-arm-btn">Stop lift shovel arm</button>
   <button id="start-video-btn">Start Video</button>
   <button id="stop-video-btn">Stop Video</button>
 
-  <script src="https://cdn.jsdelivr.net/npm/simple-peer@9/simplepeer.min.js"></script>
   <script type="module">
     
-    import poopy from '../js/poopy.js';
+    import PoopyController from '../js/poopy_controller.js';
 
-    poopy.controller.log_events();
+    let poopush_controller = new PoopyController('poopush_controller', 'ws://localhost:3000');
 
-    poopy.controller.addEventListener('peer-stream', (e) => {
+    //--------------------------------------------------------------------------
+    function attach_peer_listeners() {
+
+      let peer = poopush_controller.peer;
+      
+      peer.addEventListener('connectionstatechange', () => {
+        switch (peer.connectionState) {
+          case 'connected':
+            console.log('peer connected');
+            break;
+          case 'disconnected':
+            console.log('peer disconnected');
+            break;
+          case 'closed':
+            console.log('peer connection closed');
+            break;
+          case 'failed':
+            console.log('peer connection failed');
+            break;
+        }
+      });
+
+      peer.addEventListener('icecandidate', (candidate) => console.log('local-candidate'));
+   
+    }
+
+    //--------------------------------------------------------------------------
+    poopush_controller.addEventListener('ws-connected', () => console.log('ws-connected'));
+    poopush_controller.addEventListener('peer-ready', () => console.log('peer-ready'));
+    poopush_controller.addEventListener('data-channel-ready', () => console.log('data-channel-ready'));
+    poopush_controller.addEventListener('track-ready', () => console.log('track-ready'));
+    poopush_controller.addEventListener('offer-received', () => console.log('offer-received'));
+    poopush_controller.addEventListener('candidate-received', () => console.log('candidate-received'));
+    poopush_controller.addEventListener('answer-sent', () => console.log('answer-sent'));
+    poopush_controller.addEventListener('candidate-sent', () => console.log('candidate-sent'));
+
+    poopush_controller.addEventListener('peer-ready', attach_peer_listeners);
+
+    poopush_controller.addEventListener('track-ready', () => {
+      let track = poopush_controller.track;
       let video = document.getElementById('remote-video');
-      console.log('video obj', e.detail);
-      video.srcObject = e.detail;
-      video.play();
+      video.srcObject = track.streams[0];
     });
 
+    //--------------------------------------------------------------------------
     document.getElementById('start-video-btn').onclick = () => {
-      poopy.controller.start_video();
+      //document.getElementById('media').style.display = 'block';
+      let video = document.getElementById('remote-video');
+      video.play();
+      poopush_controller.start_video();
       console.log('Poopush controller start video');
     };
 
+    //--------------------------------------------------------------------------
     document.getElementById('stop-video-btn').onclick = () => {
+
+      poopush_controller.stop_video();
+
+      //document.getElementById('media').style.display = 'none';
       let video = document.getElementById('remote-video');
-      let stream = video.srcObject;
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-      videoEl.srcObject = null;
-      poopy.controller.stop_video();
+      video.pause();
+
+      console.log('Poopush controller stop video');
+      
     };
 
+    //--------------------------------------------------------------------------
     document.getElementById('connect-btn').onclick = () => {
-      poopy.controller.connect();
+      poopush_controller.connect();
       console.log('Poopush controller connect');
     };
 
     document.getElementById('start-lift-shovel-arm-btn').onclick = () => {
-      poopy.controller.start_lift_shovel_arm();
+      poopush_controller.start_lift_shovel_arm();
       console.log('Poopush controller start lift shovel arm');
     };
 
     document.getElementById('stop-lift-shovel-arm-btn').onclick = () => {
-      poopy.controller.stop_lift_shovel_arm();
+      poopush_controller.stop_lift_shovel_arm();
       console.log('Poopush controller stop lift shovel arm');
     };
 

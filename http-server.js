@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 1095;
 
 const mimeTypes = {
   '.html': 'text/html',

@@ -19,15 +19,16 @@ const CommandId = Object.freeze({
 
 
 /**
- * PoopyController handles WebRTC signaling as the initiator using a WebSocket server.
+ * Poopy handles WebRTC signaling as the initiator using a WebSocket server.
  * It uses SimplePeer for peer connection and dispatches lifecycle events.
  */
-class PoopyController extends EventTarget {
+class Poopy extends EventTarget {
 
-  static SIGNALING_SERVER_URL = 'wss://webrtc-signaling-production-43f3.up.railway.app';
+  static STUN_SERVER_URL = 'stun:stun.l.google.com:19302';
   static COMMAND_SENDING_FREQUENCY = 20; // ms
 
   #id;
+  #server_url;
   #socket = null;
   #peer = null;
   #intervals = new Map();
@@ -35,24 +36,33 @@ class PoopyController extends EventTarget {
   /**
    * Creates a new PoopyController.
    * @param {string} id - Unique ID for this controller instance.
+   * @param {string} server_url - URL of the signaling server.
    */
-  constructor(id) {
+  constructor(id, server_url) {
 
     super();
     this.#id = id;
-    // this.#intervals = new Map(); // Ensure this is present and correct
+    this.#server_url = server_url;
+
+    this.#init_web_socket();
 
   }
 
   /**
-   * Initiates the connection: opens WebSocket.
-   * Dispatches `socket-connected` when the WebSocket is open.
+   * Returns the id of the controller.
    */
-  connect() {
+  get_id() {
 
-    this.#socket = new WebSocket(PoopyController.SIGNALING_SERVER_URL);
-    this.#socket.addEventListener('open', this.#handle_socket_open.bind(this));
-    this.#socket.addEventListener('message', this.#handle_socket_message.bind(this));
+    return this.#id;
+
+  }
+
+  /**
+   * Returns the name of the controller.
+   */
+  get_name() {
+
+    return this.#id === 'poopush_controller' ? 'poopush' : 'poopelle';
 
   }
 
@@ -233,13 +243,10 @@ class PoopyController extends EventTarget {
 
     const events = [
       'web-socket-connected',
-      'remote-peer-online',
-      'remote-peer-offline',
-      'webrtc-offer-sent',
-      'webrtc-answer',
+      'webrtc-answer-sent',
       'webrtc-offer',
-      'webrtc-ice-candidate',
-      'webrtc-ice-candidate-sent',
+      'webrtc-remote-candidate',
+      'webrtc-local-candidate-sent',
       'peer-connected',
       'peer-disconnected',
       'peer-stream',
@@ -248,13 +255,20 @@ class PoopyController extends EventTarget {
 
     events.forEach((event_name) => {
       this.addEventListener(event_name, (event) => {
-        if (event.detail) {
-          console.log(`${this.#id} event: ${event.type}, event_obj: `, event.detail);  
-        } else {
-          console.log(`${this.#id} event: ${event.type}`);
-        }
+        console.log(`${this.#id}: ${event.type}`);
       });
     });
+
+  }
+
+  /**
+   * Creates the Websocket and attach handlers for `open` and `message` events.
+   */
+  #init_web_socket() {
+
+    this.#socket = new WebSocket(this.#server_url);
+    this.#socket.addEventListener('open', this.#handle_socket_open.bind(this));
+    this.#socket.addEventListener('message', this.#handle_socket_message.bind(this));
 
   }
 
@@ -264,10 +278,7 @@ class PoopyController extends EventTarget {
    */
   #send_command_periodically(command_id) {
 
-    if (this.#intervals.has && this.#intervals.has(command_id)) { // Add safety check
-     console.warn("[Debug] Interval already exists for command_id:", command_id);
-     return;
-  }
+    if (this.#intervals.has(command_id)) return;
 
     const send_fn = () => {
       this.#send_command(new Uint8Array([command_id, 0, 0, 0]));
@@ -298,14 +309,13 @@ class PoopyController extends EventTarget {
    * Clears all command sending intervals.
    */
   #clear_all_intervals() {
-    // console.log("[Debug] #clear_all_intervals called");
+
     for (const interval_id of Object.values(this.#intervals)) {
       clearInterval(interval_id);
     }
 
     this.#intervals = {};
-    // this.#intervals = new Map();
-    // console.log("[PoopyController] Command intervals cleared and Map reset."); // Optional debug log
+
   }
 
   /**
@@ -314,21 +324,23 @@ class PoopyController extends EventTarget {
    */
   #send_command(buffer) {
 
-    if (!this.#peer || !this.#peer.connected) return;
+    if (!this.#peer || !this.#peer.connected) {
+      return;  
+    } 
 
     this.#peer.send(buffer);
 
   }
 
   /**
-   * Handles the WebSocket open event, sets up peer and sends hello message.
+   * Handles the WebSocket open event, sends registration message and creates the peer.
    */
   #handle_socket_open() {
 
     this.dispatchEvent(new Event('web-socket-connected'));
 
-    this.#send_socket_message({
-      type: 'hello',
+    this.#send_ws_message({
+      type: 'registration',
       id: this.#id
     });
 
@@ -342,28 +354,19 @@ class PoopyController extends EventTarget {
 
     const msg = JSON.parse(event.data);
 
-    if (msg.type === 'signal' && msg.data) {
-      if (msg.data.type === 'answer') {
-        this.#peer.signal(msg.data);
-        this.dispatchEvent(new CustomEvent('webrtc-answer', { detail: msg.data }));
-      } else if (msg.data.type === 'candidate') {
-        this.#peer.signal(msg.data);
-        this.dispatchEvent(new CustomEvent('webrtc-ice-candidate', { detail: msg.data }));
-      } else if (msg.data.type === 'offer') {
-        this.#peer.signal(msg.data);
-        this.dispatchEvent(new CustomEvent('webrtc-offer', { detail: msg.data }));
-      }
+    switch (msg.type) {
+      case 'offer':
+        this.#create_peer();
+        this.#peer.signal(msg);
+        this.dispatchEvent(new CustomEvent('webrtc-offer', { detail: msg }));
+        return;
+      case 'candidate':
+        this.#peer.signal(msg);
+        this.dispatchEvent(new CustomEvent('webrtc-remote-candidate', { detail: msg }));
+        return;
     }
 
-    if (msg.type === 'remote-peer-online') {
-      this.#create_peer();
-      this.dispatchEvent(new Event('remote-peer-online'));
-      return;
-    }
-
-    if (msg.type === 'remote-peer-offline') {
-      this.dispatchEvent(new Event('remote-peer-offline'));
-    }
+    console.log('Invalid message type');
 
   }
 
@@ -374,24 +377,49 @@ class PoopyController extends EventTarget {
   #create_peer() {
 
     this.#peer = new SimplePeer({ 
-      initiator: true, 
+      initiator: false, 
       trickle: true,
       config: {
         iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' }
+          { urls: Poopy.STUN_SERVER_URL }
         ]
-      },
-      offerOptions: {
-        offerToReceiveVideo: true,
-        offerToReceiveAudio: false
       }
     });
 
-    this.#peer.on('signal', (data) => {
-      if (data.type === 'offer') {
-        this.#on_offer_ready(data);
-      } else if (data.type === 'candidate') {
-        this.#on_ice_candidate_ready(data);
+    this.#attach_peer_event_handlers();
+
+  }
+
+  /**
+   * Destroys the SimplePeer instance and attached handlers.
+   */
+  #destroy_peer() {
+
+    if (this.#peer) {
+      this.#peer.removeAllListeners();
+      this.#peer.destroy();
+      this.#peer = null;
+    }
+
+    this.#clear_all_intervals();
+
+  }
+
+  /**
+   * Attaches event handlers to the peer.
+   */
+  #attach_peer_event_handlers() {
+
+    this.#peer.on('signal', (msg) => {
+      switch (msg.type) {
+        case 'answer':
+          this.#send_ws_message(msg);
+          this.dispatchEvent(new CustomEvent('webrtc-answer-sent', { detail: msg }));
+          break;
+        case 'candidate':
+          this.#send_ws_message(msg);
+          this.dispatchEvent(new CustomEvent('webrtc-local-candidate-sent', { detail: msg }));
+          break;
       }
     });
 
@@ -399,61 +427,22 @@ class PoopyController extends EventTarget {
       this.dispatchEvent(new CustomEvent('peer-stream', { detail: stream }));
     });
 
+    this.#peer.on('data', (data) => {
+      this.#handle_data(data);
+    });
+
     this.#peer.on('connect', () => {
       this.dispatchEvent(new Event('peer-connected'));
     });
 
     this.#peer.on('error', (err) => {
-      console.log('error', err);
       this.dispatchEvent(new CustomEvent('peer-error', { detail: err }));
     });
 
     this.#peer.on('close', () => {
-      console.log("[Debug] SimplePeer 'close' event fired");
-      if (this.#peer) {
-        this.#peer.removeAllListeners();
-        this.#peer.destroy();
-        this.#peer = null;
-      }
-      this.#clear_all_intervals();
+      this.#destroy_peer();
       this.dispatchEvent(new Event('peer-disconnected'));
     });
-
-  }
-
-  /**
-   * Handles the local offer creation by sending it over the WebSocket.
-   * Dispatches `offer-sent`.
-   * @param {object} offer
-   */
-  #on_offer_ready(offer) {
-
-    this.#send_socket_message({
-      type: 'signal',
-      id: this.#id,
-      to: this.#get_controlled_peer_id(),
-      data: offer
-    });
-
-    this.dispatchEvent(new Event('webrtc-offer-sent'));
-
-  }
-
-  /**
-   * Handles new ICE candidates and sends them via WebSocket.
-   * Dispatches `ice-candidate-sent`.
-   * @param {object} candidate
-   */
-  #on_ice_candidate_ready(candidate) {
-
-    this.#send_socket_message({
-      type: 'signal',
-      id: this.#id,
-      to: this.#get_controlled_peer_id(),
-      data: candidate
-    });
-
-    this.dispatchEvent(new Event('webrtc-ice-candidate-sent'));
 
   }
 
@@ -461,7 +450,7 @@ class PoopyController extends EventTarget {
    * Sends a JSON message through the WebSocket.
    * @param {object} msg
    */
-  #send_socket_message(msg) {
+  #send_ws_message(msg) {
 
     if (this.#socket.readyState === WebSocket.OPEN) {
       this.#socket.send(JSON.stringify(msg));
@@ -472,53 +461,18 @@ class PoopyController extends EventTarget {
   }
 
   /**
-   * Returns the peer ID controlled by this controller.
-   * @returns {string} The ID of the controlled peer.
+   * Handles incoming data.
+   * @param {Uint8Array} data
    */
-  #get_controlled_peer_id() {
-
-    return this.#id === 'poopush_controller' ? 'poopush' : 'poopelle';
-
-  }
-
-}
-
-/**
- * Poopy class encapsulates two PoopyController instances (poopush and poopelle)
- * and exposes a method to switch the current controller.
- */
-class Poopy {
-
-  poopush;
-  poopelle;
-  controller;
-  
-  /**
-   * Creates the Poopy instance and initializes both controllers.
-   */
-  constructor() {
-
-    this.poopush = new PoopyController('poopush_controller');
-    this.poopelle = new PoopyController('poopelle_controller');
-    this.controller = this.poopush;
-
-  }
-
-  /**
-   * Switches the current controller to the other one.
-   */
-  switch_controller() {
-
-    if (this.controller === this.poopelle) {
-      this.controller = this.poopush;
-    } else {
-      this.controller = this.poopelle;
+  #handle_data(data) {
+    
+    if (data instanceof Uint8Array && data.length === 4) {
+      const event = new CustomEvent('command', { detail: data });
+      this.dispatchEvent(event);
     }
 
   }
 
 }
 
-// Create a single Poopy instance and export it
-const poopy = new Poopy();
-export default poopy;
+export default Poopy;
