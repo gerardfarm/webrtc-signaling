@@ -21,7 +21,11 @@
     
     import PoopyController from '../js/poopy_controller.js';
 
-    let poopush_controller = new PoopyController('poopush_controller', 'ws://localhost:3000');
+    let server_addr = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ?
+      'ws://localhost:3000' :
+      'wss://webrtc-signaling-production-43f3.up.railway.app';
+
+    let poopush_controller = new PoopyController('poopush_controller', server_addr);
 
     //--------------------------------------------------------------------------
     function attach_peer_listeners() {
