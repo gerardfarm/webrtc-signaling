@@ -12,6 +12,8 @@
     <video id="remote-video"  width="640" height="360" autoplay playsinline></video>
   </div>
   <button id="connect-btn">Connect</button>
+  <button id="start-move-forward-btn">Start move forward</button>
+  <button id="stop-move-forward-btn">Stop move forward</button>
   <button id="start-lift-shovel-arm-btn">Start lift shovel arm</button>
   <button id="stop-lift-shovel-arm-btn">Stop lift shovel arm</button>
   <button id="start-video-btn">Start Video</button>
@@ -97,6 +99,16 @@
     document.getElementById('connect-btn').onclick = () => {
       poopush_controller.connect();
       console.log('Poopush controller connect');
+    };
+
+    document.getElementById('start-move-forward-btn').onclick = () => {
+      poopush_controller.start_move_forward();
+      console.log('Poopush controller start move forward');
+    };
+
+    document.getElementById('stop-move-forward-btn').onclick = () => {
+      poopush_controller.stop_move_forward();
+      console.log('Poopush controller stop move forward');
     };
 
     document.getElementById('start-lift-shovel-arm-btn').onclick = () => {
