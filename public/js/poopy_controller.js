@@ -256,15 +256,17 @@ class PoopyController extends EventTarget {
 
     const events = [
       'ws-connected',
-      'webrtc-offer-sent',
-      'webrtc-answer',
-      'webrtc-remote-candidate',
-      'webrtc-local-candidate-sent',
+      'peer-created',
+      'data-channel-ready',
+      'track-ready',
+      'offer-received',
+      'candidate-received',
+      'answer-sent',
+      'candidate-sent',
       'peer-connected',
       'peer-disconnected',
-      'peer-track',
-      'peer-error',
-      'peer-data-channel-open'
+      'peer-closed',
+      'peer-failed'
     ];
 
     events.forEach((event_name) => {
@@ -438,6 +440,23 @@ class PoopyController extends EventTarget {
       ]
     });
 
+    this.peer.addEventListener('connectionstatechange', () => {
+      switch (that.peer.connectionState) {
+        case 'connected':
+          that.dispatchEvent(new Event('peer-connected'));;
+          break;
+        case 'disconnected':
+          that.dispatchEvent(new Event('peer-disconnected'));;
+          break;
+        case 'closed':
+          that.dispatchEvent(new Event('peer-closed'));;
+          break;
+        case 'failed':
+          that.dispatchEvent(new Event('peer-failed'));;
+          break;
+      }
+    });
+
     this.peer.addEventListener('icecandidate', (e) => {
       if (e.candidate && e.candidate.candidate) {
         let candidate = { 
@@ -459,7 +478,7 @@ class PoopyController extends EventTarget {
       that.dispatchEvent(new Event('track-ready'));
     });
     
-    this.dispatchEvent(new Event('peer-ready'));
+    this.dispatchEvent(new Event('peer-created'));
 
   }
 
